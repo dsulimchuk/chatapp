@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Chat Application</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="stylesheet" href="/css/chat.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>Chat Room</h1>
+        </div>
+        
+        <div id="username-form" class="username-form">
+            <label for="username">Enter your username:</label>
+            <input type="text" id="username" placeholder="Username" required/>
+            <button id="join-btn">Join Chat</button>
+        </div>
+        
+        <div id="chat-box" class="chat-box" style="display: none;">
+            <div id="messages-container" class="messages-container">
+                <div th:each="message : ${messages}" class="message">
+                    <span class="username" th:text="${message.username}">User</span>
+                    <span class="timestamp" th:text="${#temporals.format(message.timestamp, 'HH:mm')}">12:00</span>
+                    <p class="content" th:text="${message.content}">Message content</p>
+                </div>
+            </div>
+            
+            <div class="message-form">
+                <textarea id="message-input" placeholder="Type your message..." required></textarea>
+                <button id="send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/js/chat.js"></script>
+</body>
+</html>
