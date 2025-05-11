@@ -32,9 +32,17 @@ public class Message {
     @JsonIgnore
     private Room room;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
+    private User user;
+
     // Needed for JSON serialization/deserialization
     @Transient
     private Long roomId;
+
+    @Transient
+    private Long userId;
 
     public Message() {
         this.timestamp = LocalDateTime.now();
@@ -50,6 +58,14 @@ public class Message {
         this.username = username;
         this.content = content;
         this.room = room;
+        this.timestamp = LocalDateTime.now();
+    }
+
+    public Message(String username, String content, Room room, User user) {
+        this.username = username;
+        this.content = content;
+        this.room = room;
+        this.user = user;
         this.timestamp = LocalDateTime.now();
     }
 
@@ -99,5 +115,21 @@ public class Message {
 
     public void setRoomId(Long roomId) {
         this.roomId = roomId;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public Long getUserId() {
+        return user != null ? user.getId() : userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 }

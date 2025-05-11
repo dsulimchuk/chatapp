@@ -12,6 +12,22 @@
             font-family: Arial, sans-serif;
         }
 
+        .user-info {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #666;
+        }
+
+        .logout-link {
+            margin-left: 10px;
+            color: #4285f4;
+            text-decoration: none;
+        }
+
+        .logout-link:hover {
+            text-decoration: underline;
+        }
+
         body {
             background-color: #f5f5f5;
             padding: 20px;
@@ -183,6 +199,10 @@
 <body>
     <div class="container">
         <h1>Chat Rooms</h1>
+        <div class="user-info">
+            Welcome, <span th:text="${displayName}">User</span>
+            <a th:href="@{/logout}" class="logout-link">Logout</a>
+        </div>
         
         <div class="rooms-wrapper">
             <div class="rooms-list">
@@ -214,7 +234,6 @@
                 <div class="card">
                     <div class="card-title">Create a New Room</div>
                     <form id="createRoomForm" th:action="@{/rooms}" method="post" th:object="${newRoom}">
-                        <input type="hidden" name="username" th:value="${username}"/>
                         
                         <div class="form-group">
                             <label for="name">Room Name:</label>

@@ -16,7 +16,8 @@
                 <p th:text="${room.description}" class="room-description">Room description</p>
             </div>
             <div class="room-actions">
-                <a href="/rooms" class="back-btn" id="back-link">Back to Rooms</a>
+                <a href="/rooms" class="back-btn">Back to Rooms</a>
+                <a th:href="@{/logout}" class="back-btn">Logout</a>
             </div>
         </div>
 
@@ -40,12 +41,9 @@
         // Pass data from Thymeleaf to JavaScript
         const roomId = [[${room.id}]];
         let username = [[${username}]];
-        const backLink = document.getElementById('back-link');
+        let displayName = [[${displayName}]];
 
-        // Update back link to include username
-        if (username) {
-            backLink.href = `/rooms?username=${username}`;
-        }
+        // No longer need to update back link as we're using authentication
 
         let stompClient = null;
 
@@ -54,13 +52,9 @@
             const messageInput = document.getElementById('message-input');
             const messagesContainer = document.getElementById('messages-container');
 
-            // If username is not set, get it from local storage
+            // If username is not set, something is wrong with authentication
             if (!username) {
-                username = localStorage.getItem('chatUsername');
-                if (!username) {
-                    // Redirect to login if no username is set
-                    window.location.href = '/login';
-                }
+                window.location.href = '/login';
             }
 
             // Connect to WebSocket
@@ -91,7 +85,7 @@
                     });
 
                     // Send a system message that user joined
-                    sendSystemMessage(username + ' joined the chat');
+                    sendSystemMessage(([[${displayName}]] || username) + ' joined the chat');
                 });
             }
 
@@ -110,7 +104,7 @@
                 const content = messageInput.value.trim();
                 if (content && stompClient) {
                     const message = {
-                        username: username,
+                        username: displayName || username, // Use display name when available
                         content: content,
                         timestamp: new Date(),
                         roomId: roomId

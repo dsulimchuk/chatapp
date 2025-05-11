@@ -31,10 +31,7 @@ public class ChatController {
         return "login";
     }
 
-    @GetMapping("/login")
-    public String login() {
-        return "login";
-    }
+    // Removed login mapping as it's now handled by AuthController
 
     @MessageMapping("/chat/{roomId}")
     @SendTo("/topic/chat/{roomId}")

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Chat Application - Login</title>
+    <title>Login - Chat Application</title>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <style>
@@ -72,56 +72,71 @@
         .error {
             color: red;
             font-size: 14px;
-            margin-top: 5px;
-            display: none;
+            margin-bottom: 20px;
+            background-color: #ffebee;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .success {
+            color: green;
+            font-size: 14px;
+            margin-bottom: 20px;
+            background-color: #e8f5e9;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .register-link a {
+            color: #4285f4;
+            text-decoration: none;
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
     <div class="login-container">
         <h1>Chat Application</h1>
-        <form id="loginForm" action="/rooms" method="GET">
+        
+        <div th:if="${param.error}" class="error">
+            Invalid username or password
+        </div>
+        
+        <div th:if="${param.logout}" class="success">
+            You have been logged out
+        </div>
+        
+        <div th:if="${param.registered}" class="success">
+            Registration successful! Please log in
+        </div>
+        
+        <form th:action="@{/login}" method="post">
             <div class="form-group">
-                <label for="username">Enter your username:</label>
-                <input type="text" id="username" name="username" placeholder="Username" required minlength="3" maxlength="20"/>
-                <div id="usernameError" class="error">Username must be between 3 and 20 characters</div>
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required/>
             </div>
-            <button type="submit">Join Chat</button>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required/>
+            </div>
+            
+            <button type="submit">Login</button>
         </form>
+        
+        <div class="register-link">
+            Don't have an account? <a th:href="@{/register}">Register here</a>
+        </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const loginForm = document.getElementById('loginForm');
-            const usernameInput = document.getElementById('username');
-            const usernameError = document.getElementById('usernameError');
-
-            loginForm.addEventListener('submit', function(e) {
-                if (!validateUsername(usernameInput.value)) {
-                    e.preventDefault();
-                    usernameError.style.display = 'block';
-                } else {
-                    usernameError.style.display = 'none';
-                    localStorage.setItem('chatUsername', usernameInput.value);
-                }
-            });
-
-            usernameInput.addEventListener('input', function() {
-                if (validateUsername(usernameInput.value)) {
-                    usernameError.style.display = 'none';
-                }
-            });
-
-            function validateUsername(username) {
-                return username.length >= 3 && username.length <= 20;
-            }
-
-            // Pre-fill username if it exists in local storage
-            const savedUsername = localStorage.getItem('chatUsername');
-            if (savedUsername) {
-                usernameInput.value = savedUsername;
-            }
-        });
-    </script>
 </body>
 </html>
