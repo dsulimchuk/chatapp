@@ -7,7 +7,7 @@ A simple real-time chat application built with Spring Boot and WebSockets.
 - Real-time messaging using WebSockets
 - Users can join with a username
 - All messages are visible to all connected users
-- In-memory message storage
+- PostgreSQL database for message persistence
 - Responsive web UI
 
 ## Technology Stack
@@ -15,6 +15,9 @@ A simple real-time chat application built with Spring Boot and WebSockets.
 - Java 21
 - Spring Boot 3.4.5
 - Spring WebSocket for real-time communication
+- Spring Data JPA for database access
+- PostgreSQL for message storage
+- Flyway for database migrations
 - Thymeleaf for server-side rendering
 - SockJS and STOMP for WebSocket client
 
@@ -33,6 +36,15 @@ A simple real-time chat application built with Spring Boot and WebSockets.
 
 - Java 21 or later
 - Gradle
+- Docker and Docker Compose (for PostgreSQL database)
+
+### Database Setup
+
+Start the PostgreSQL database using Docker Compose:
+
+```
+docker-compose up -d
+```
 
 ### Build and Run
 

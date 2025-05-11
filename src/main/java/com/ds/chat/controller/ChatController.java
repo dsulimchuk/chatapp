@@ -28,7 +28,6 @@ public class ChatController {
     @MessageMapping("/send")
     @SendTo("/topic/messages")
     public Message sendMessage(Message message) {
-        chatService.addMessage(message);
-        return message;
+        return chatService.addMessage(message);
     }
 }
