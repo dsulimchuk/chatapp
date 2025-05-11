@@ -147,6 +147,37 @@
             padding: 20px;
             color: #666;
         }
+        
+        /* Search styles */
+        .search-container {
+            padding: 0 15px 15px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 10px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 14px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>');
+            background-repeat: no-repeat;
+            background-position: 10px center;
+            background-size: 16px;
+            padding-left: 35px;
+            transition: all 0.3s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #4285f4;
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+        }
+        
+        .room-item.hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -157,16 +188,24 @@
             <div class="rooms-list">
                 <div class="card">
                     <div class="card-title">Available Rooms</div>
-                    <div th:if="${rooms.empty}" class="empty-state">
+                    <div class="search-container">
+                        <input type="text" id="room-search" placeholder="Search rooms..." class="search-input">
+                    </div>
+                    <div th:if="${rooms.empty}" class="empty-state" id="empty-state">
                         <p>No rooms available. Create your first room!</p>
                     </div>
-                    <div th:each="room : ${rooms}" class="room-item">
-                        <div class="room-info">
-                            <h3 th:text="${room.name}">Room Name</h3>
-                            <p th:text="${room.description}">Room description</p>
-                            <small th:text="'Created by ' + ${room.createdBy}">Created by User</small>
+                    <div id="no-results" class="empty-state" style="display: none;">
+                        <p>No rooms match your search. Try a different search term or create a new room.</p>
+                    </div>
+                    <div id="rooms-list">
+                        <div th:each="room : ${rooms}" class="room-item">
+                            <div class="room-info">
+                                <h3 th:text="${room.name}" class="room-name">Room Name</h3>
+                                <p th:text="${room.description}" class="room-description">Room description</p>
+                                <small th:text="'Created by ' + ${room.createdBy}" class="room-creator">Created by User</small>
+                            </div>
+                            <a th:href="@{'/rooms/' + ${room.id} + '?username=' + ${username}}" class="join-btn">Join</a>
                         </div>
-                        <a th:href="@{'/rooms/' + ${room.id} + '?username=' + ${username}}" class="join-btn">Join</a>
                     </div>
                 </div>
             </div>
@@ -198,6 +237,7 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Room creation form validation
             const createRoomForm = document.getElementById('createRoomForm');
             const nameInput = document.getElementById('name');
             const nameError = document.getElementById('nameError');
@@ -206,29 +246,33 @@
             let nameValid = false;
             let nameCheckTimeout;
             
-            nameInput.addEventListener('input', function() {
-                clearTimeout(nameCheckTimeout);
-                
-                if (nameInput.value.length < 3 || nameInput.value.length > 50) {
-                    nameError.style.display = 'block';
-                    nameExistsError.style.display = 'none';
-                    nameValid = false;
-                    return;
-                }
-                
-                nameError.style.display = 'none';
-                
-                // Debounce the API check
-                nameCheckTimeout = setTimeout(function() {
-                    validateRoomName(nameInput.value);
-                }, 300);
-            });
+            if (nameInput) {
+                nameInput.addEventListener('input', function() {
+                    clearTimeout(nameCheckTimeout);
+                    
+                    if (nameInput.value.length < 3 || nameInput.value.length > 50) {
+                        nameError.style.display = 'block';
+                        nameExistsError.style.display = 'none';
+                        nameValid = false;
+                        return;
+                    }
+                    
+                    nameError.style.display = 'none';
+                    
+                    // Debounce the API check
+                    nameCheckTimeout = setTimeout(function() {
+                        validateRoomName(nameInput.value);
+                    }, 300);
+                });
+            }
             
-            createRoomForm.addEventListener('submit', function(e) {
-                if (!nameValid) {
-                    e.preventDefault();
-                }
-            });
+            if (createRoomForm) {
+                createRoomForm.addEventListener('submit', function(e) {
+                    if (!nameValid) {
+                        e.preventDefault();
+                    }
+                });
+            }
             
             function validateRoomName(name) {
                 fetch('/rooms/validate-name', {
@@ -252,6 +296,65 @@
                     console.error('Error checking room name:', error);
                     nameValid = true; // Allow submission if validation fails
                 });
+            }
+            
+            // Room search functionality
+            const searchInput = document.getElementById('room-search');
+            const roomsList = document.getElementById('rooms-list');
+            const emptyState = document.getElementById('empty-state');
+            const noResults = document.getElementById('no-results');
+            
+            if (searchInput && roomsList) {
+                const roomItems = roomsList.querySelectorAll('.room-item');
+                
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase().trim();
+                    let matchFound = false;
+                    
+                    // Hide empty state message while searching
+                    if (emptyState && searchTerm !== '') {
+                        emptyState.style.display = 'none';
+                    }
+                    
+                    roomItems.forEach(function(room) {
+                        const roomNameElement = room.querySelector('.room-name');
+                        const roomName = roomNameElement ? roomNameElement.textContent.toLowerCase() : '';
+                        
+                        const roomDescriptionElement = room.querySelector('.room-description');
+                        const roomDescription = roomDescriptionElement ? roomDescriptionElement.textContent.toLowerCase() : '';
+                        
+                        const roomCreatorElement = room.querySelector('.room-creator');
+                        const roomCreator = roomCreatorElement ? roomCreatorElement.textContent.toLowerCase() : '';
+                        
+                        // Check if any of the room data contains the search term
+                        if (searchTerm === '' || 
+                            roomName.includes(searchTerm) || 
+                            roomDescription.includes(searchTerm) || 
+                            roomCreator.includes(searchTerm)) {
+                            room.style.display = '';
+                            matchFound = true;
+                        } else {
+                            room.style.display = 'none';
+                        }
+                    });
+                    
+                    // Show/hide no results message
+                    if (noResults) {
+                        if (!matchFound && searchTerm !== '') {
+                            noResults.style.display = 'block';
+                        } else {
+                            noResults.style.display = 'none';
+                        }
+                    }
+                    
+                    // Show empty state if there's no search and no rooms
+                    if (emptyState && searchTerm === '' && roomItems.length === 0) {
+                        emptyState.style.display = 'block';
+                    }
+                });
+                
+                // Clear search on page load
+                searchInput.value = '';
             }
         });
     </script>
