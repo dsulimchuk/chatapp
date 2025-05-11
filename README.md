@@ -6,7 +6,8 @@ A simple real-time chat application built with Spring Boot and WebSockets.
 
 - Real-time messaging using WebSockets
 - Users can join with a username
-- All messages are visible to all connected users
+- Multiple chat rooms (create new or join existing)
+- Room-specific chat messages
 - PostgreSQL database for message persistence
 - Responsive web UI
 

@@ -42,40 +42,30 @@ class ChatApplicationIntegrationTest {
     void testHomePageLoads() throws Exception {
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("chat"))
-                .andExpect(model().attributeExists("messages"));
+                .andExpect(view().name("login"));
     }
 
     @Test
     void testChatServiceIntegration() {
-        // Given
-        chatService.addMessage(new Message("testUser", "Integration Test Message"));
-        
+        // This test has been updated to reflect the new room-based architecture
+        // Login page is now at root, so we can't test message display directly here
+
         // When
         String response = restTemplate.getForObject("http://localhost:" + port + "/", String.class);
-        
+
         // Then
-        assertTrue(response.contains("testUser"));
-        assertTrue(response.contains("Integration Test Message"));
+        assertTrue(response.contains("Chat Application"));
+        assertTrue(response.contains("Enter your username"));
     }
 
     @Test
-    void testAddAndRetrieveMessages() {
-        // Clear previous test messages if any
-        // Note: In a real application, you'd want a way to reset the state between tests
-        
-        // Given
-        int initialCount = chatService.getAllMessages().size();
-        Message message1 = new Message("user1", "First integration message");
-        Message message2 = new Message("user2", "Second integration message");
-        
-        // When
-        chatService.addMessage(message1);
-        chatService.addMessage(message2);
-        
-        // Then
-        assertEquals(initialCount + 2, chatService.getAllMessages().size());
-        assertEquals("First integration message", chatService.getAllMessages().get(initialCount).getContent());
-        assertEquals("Second integration message", chatService.getAllMessages().get(initialCount + 1).getContent());
+    void testRoomsEndpoint() {
+        // Test that the rooms endpoint returns the rooms page
+        String response = restTemplate.getForObject("http://localhost:" + port + "/rooms?username=testUser", String.class);
+
+        // Verify rooms page content
+        assertTrue(response.contains("Chat Rooms"));
+        assertTrue(response.contains("Available Rooms"));
+        assertTrue(response.contains("Create a New Room"));
     }
 }

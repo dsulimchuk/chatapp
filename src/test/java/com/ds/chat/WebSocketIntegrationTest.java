@@ -47,35 +47,42 @@ class WebSocketIntegrationTest {
 
     @Test
     void testSendMessage() throws ExecutionException, InterruptedException, TimeoutException {
-        StompSessionHandler sessionHandler = new TestStompSessionHandler(completableFuture);
+        // Create a room ID for testing
+        Long roomId = 1L; // This should match a room in test database
+
+        StompSessionHandler sessionHandler = new TestStompSessionHandler(completableFuture, roomId);
         StompSession session = stompClient.connectAsync("ws://localhost:" + port + "/chat-websocket", sessionHandler)
                 .get(5, TimeUnit.SECONDS);
 
         String username = "TestUser";
         String content = "Test WebSocket Message";
-        
-        Message message = new Message(username, content);
-        session.send("/app/send", message);
 
+        Message message = new Message(username, content);
+        message.setRoomId(roomId);
+        session.send("/app/chat/" + roomId, message);
+
+        // Wait for the message to be processed
         Message receivedMessage = completableFuture.get(5, TimeUnit.SECONDS);
-        
+
         assertNotNull(receivedMessage);
         assertEquals(username, receivedMessage.getUsername());
         assertEquals(content, receivedMessage.getContent());
-        
+
         session.disconnect();
     }
 
     private static class TestStompSessionHandler extends StompSessionHandlerAdapter {
         private final CompletableFuture<Message> completableFuture;
+        private final Long roomId;
 
-        public TestStompSessionHandler(CompletableFuture<Message> completableFuture) {
+        public TestStompSessionHandler(CompletableFuture<Message> completableFuture, Long roomId) {
             this.completableFuture = completableFuture;
+            this.roomId = roomId;
         }
 
         @Override
         public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
-            session.subscribe("/topic/messages", new StompFrameHandler() {
+            session.subscribe("/topic/chat/" + roomId, new StompFrameHandler() {
                 @Override
                 public Type getPayloadType(StompHeaders headers) {
                     return Message.class;

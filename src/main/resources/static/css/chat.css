@@ -29,7 +29,42 @@ body {
     background-color: #4285f4;
     color: white;
     padding: 15px;
-    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.room-info {
+    text-align: left;
+}
+
+.room-info h1 {
+    margin-bottom: 5px;
+    font-size: 22px;
+}
+
+.room-description {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.room-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.back-btn {
+    padding: 8px 15px;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.back-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
 }
 
 .username-form {

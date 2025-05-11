@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Chat Application</title>
+    <title th:text="${room.name} + ' | Chat Room'">Chat Room</title>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <link rel="stylesheet" href="/css/chat.css"/>
@@ -11,16 +11,16 @@
 <body>
     <div class="chat-container">
         <div class="chat-header">
-            <h1>Chat Room</h1>
+            <div class="room-info">
+                <h1 th:text="${room.name}">Chat Room</h1>
+                <p th:text="${room.description}" class="room-description">Room description</p>
+            </div>
+            <div class="room-actions">
+                <a href="/rooms" class="back-btn" id="back-link">Back to Rooms</a>
+            </div>
         </div>
-        
-        <div id="username-form" class="username-form">
-            <label for="username">Enter your username:</label>
-            <input type="text" id="username" placeholder="Username" required/>
-            <button id="join-btn">Join Chat</button>
-        </div>
-        
-        <div id="chat-box" class="chat-box" style="display: none;">
+
+        <div id="chat-box" class="chat-box">
             <div id="messages-container" class="messages-container">
                 <div th:each="message : ${messages}" class="message">
                     <span class="username" th:text="${message.username}">User</span>
@@ -28,14 +28,132 @@
                     <p class="content" th:text="${message.content}">Message content</p>
                 </div>
             </div>
-            
+
             <div class="message-form">
                 <textarea id="message-input" placeholder="Type your message..." required></textarea>
                 <button id="send-btn">Send</button>
             </div>
         </div>
     </div>
-    
-    <script src="/js/chat.js"></script>
+
+    <script th:inline="javascript">
+        // Pass data from Thymeleaf to JavaScript
+        const roomId = [[${room.id}]];
+        let username = [[${username}]];
+        const backLink = document.getElementById('back-link');
+
+        // Update back link to include username
+        if (username) {
+            backLink.href = `/rooms?username=${username}`;
+        }
+
+        let stompClient = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const sendBtn = document.getElementById('send-btn');
+            const messageInput = document.getElementById('message-input');
+            const messagesContainer = document.getElementById('messages-container');
+
+            // If username is not set, get it from local storage
+            if (!username) {
+                username = localStorage.getItem('chatUsername');
+                if (!username) {
+                    // Redirect to login if no username is set
+                    window.location.href = '/login';
+                }
+            }
+
+            // Connect to WebSocket
+            connect();
+
+            // Scroll to bottom of messages container
+            scrollToBottom();
+
+            sendBtn.addEventListener('click', sendMessage);
+
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            function connect() {
+                const socket = new SockJS('/chat-websocket');
+                stompClient = Stomp.over(socket);
+
+                stompClient.connect({}, function(frame) {
+                    console.log('Connected: ' + frame);
+
+                    stompClient.subscribe(`/topic/chat/${roomId}`, function(message) {
+                        const messageData = JSON.parse(message.body);
+                        displayMessage(messageData);
+                    });
+
+                    // Send a system message that user joined
+                    sendSystemMessage(username + ' joined the chat');
+                });
+            }
+
+            function sendSystemMessage(content) {
+                const message = {
+                    username: 'System',
+                    content: content,
+                    timestamp: new Date(),
+                    roomId: roomId
+                };
+
+                stompClient.send(`/app/chat/${roomId}`, {}, JSON.stringify(message));
+            }
+
+            function sendMessage() {
+                const content = messageInput.value.trim();
+                if (content && stompClient) {
+                    const message = {
+                        username: username,
+                        content: content,
+                        timestamp: new Date(),
+                        roomId: roomId
+                    };
+
+                    stompClient.send(`/app/chat/${roomId}`, {}, JSON.stringify(message));
+                    messageInput.value = '';
+                }
+            }
+
+            function displayMessage(message) {
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message';
+
+                const usernameElement = document.createElement('span');
+                usernameElement.className = 'username';
+                usernameElement.textContent = message.username;
+
+                const timestampElement = document.createElement('span');
+                timestampElement.className = 'timestamp';
+                const messageTime = new Date(message.timestamp);
+                timestampElement.textContent = messageTime.getHours().toString().padStart(2, '0') +
+                                              ':' +
+                                              messageTime.getMinutes().toString().padStart(2, '0');
+
+                const contentElement = document.createElement('p');
+                contentElement.className = 'content';
+                contentElement.textContent = message.content;
+
+                messageElement.appendChild(usernameElement);
+                messageElement.appendChild(timestampElement);
+                messageElement.appendChild(contentElement);
+
+                messagesContainer.appendChild(messageElement);
+                scrollToBottom();
+            }
+
+            function scrollToBottom() {
+                if (messagesContainer) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+            }
+        });
+    </script>
 </body>
 </html>
