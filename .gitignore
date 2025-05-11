@@ -36,4 +36,16 @@ out/
 ### VS Code ###
 .vscode/
 
+### Environment Variables ###
+.env
+.env.*
+!.env.example
+
+### Logs ###
+*.log
+logs/
+
+### Application Specific ###
+app.pid
+
 **/.claude/settings.local.json

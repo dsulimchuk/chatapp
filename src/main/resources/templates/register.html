@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Register - Chat Application</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .register-container {
+            width: 100%;
+            max-width: 450px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4285f4;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #3367d6;
+        }
+
+        .error {
+            color: red;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .login-link a {
+            color: #4285f4;
+            text-decoration: none;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <h1>Create an Account</h1>
+        <form th:action="@{/register}" th:object="${user}" method="post" id="registerForm">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" th:field="*{username}" required minlength="3" maxlength="20"/>
+                <div class="error" th:if="${usernameError}" th:text="${usernameError}"></div>
+                <div class="error" id="usernameError" style="display: none;">Username must be between 3 and 20 characters</div>
+                <div class="error" id="usernameExistsError" style="display: none;">Username already exists</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="displayName">Display Name:</label>
+                <input type="text" id="displayName" th:field="*{displayName}" required minlength="3" maxlength="30"/>
+                <div class="error" id="displayNameError" style="display: none;">Display name must be between 3 and 30 characters</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" th:field="*{password}" required minlength="6"/>
+                <div class="error" id="passwordError" style="display: none;">Password must be at least 6 characters</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password:</label>
+                <input type="password" id="confirmPassword" th:field="*{confirmPassword}" required/>
+                <div class="error" th:if="${passwordError}" th:text="${passwordError}"></div>
+                <div class="error" id="confirmPasswordError" style="display: none;">Passwords don't match</div>
+            </div>
+            
+            <button type="submit">Register</button>
+        </form>
+        
+        <div class="login-link">
+            Already have an account? <a th:href="@{/login}">Login here</a>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const registerForm = document.getElementById('registerForm');
+            const usernameInput = document.getElementById('username');
+            const displayNameInput = document.getElementById('displayName');
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirmPassword');
+            
+            const usernameError = document.getElementById('usernameError');
+            const usernameExistsError = document.getElementById('usernameExistsError');
+            const displayNameError = document.getElementById('displayNameError');
+            const passwordError = document.getElementById('passwordError');
+            const confirmPasswordError = document.getElementById('confirmPasswordError');
+            
+            let usernameValid = false;
+            let displayNameValid = false;
+            let passwordValid = false;
+            let confirmPasswordValid = false;
+            let usernameCheckTimeout;
+            
+            usernameInput.addEventListener('input', function() {
+                clearTimeout(usernameCheckTimeout);
+                
+                if (usernameInput.value.length < 3 || usernameInput.value.length > 20) {
+                    usernameError.style.display = 'block';
+                    usernameExistsError.style.display = 'none';
+                    usernameValid = false;
+                    return;
+                }
+                
+                usernameError.style.display = 'none';
+                
+                // Debounce the API check
+                usernameCheckTimeout = setTimeout(function() {
+                    checkUsernameAvailability(usernameInput.value);
+                }, 300);
+            });
+            
+            displayNameInput.addEventListener('input', function() {
+                if (displayNameInput.value.length < 3 || displayNameInput.value.length > 30) {
+                    displayNameError.style.display = 'block';
+                    displayNameValid = false;
+                } else {
+                    displayNameError.style.display = 'none';
+                    displayNameValid = true;
+                }
+            });
+            
+            passwordInput.addEventListener('input', function() {
+                if (passwordInput.value.length < 6) {
+                    passwordError.style.display = 'block';
+                    passwordValid = false;
+                } else {
+                    passwordError.style.display = 'none';
+                    passwordValid = true;
+                }
+                
+                // Check confirmation again
+                validateConfirmPassword();
+            });
+            
+            confirmPasswordInput.addEventListener('input', validateConfirmPassword);
+            
+            function validateConfirmPassword() {
+                if (confirmPasswordInput.value !== passwordInput.value) {
+                    confirmPasswordError.style.display = 'block';
+                    confirmPasswordValid = false;
+                } else {
+                    confirmPasswordError.style.display = 'none';
+                    confirmPasswordValid = true;
+                }
+            }
+            
+            registerForm.addEventListener('submit', function(e) {
+                // Validate all fields again
+                if (usernameInput.value.length < 3 || usernameInput.value.length > 20) {
+                    usernameError.style.display = 'block';
+                    e.preventDefault();
+                }
+                
+                if (displayNameInput.value.length < 3 || displayNameInput.value.length > 30) {
+                    displayNameError.style.display = 'block';
+                    e.preventDefault();
+                }
+                
+                if (passwordInput.value.length < 6) {
+                    passwordError.style.display = 'block';
+                    e.preventDefault();
+                }
+                
+                if (confirmPasswordInput.value !== passwordInput.value) {
+                    confirmPasswordError.style.display = 'block';
+                    e.preventDefault();
+                }
+                
+                if (!usernameValid || !displayNameValid || !passwordValid || !confirmPasswordValid) {
+                    e.preventDefault();
+                }
+            });
+            
+            function checkUsernameAvailability(username) {
+                fetch('/check-username', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username: username })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.available) {
+                        usernameExistsError.style.display = 'none';
+                        usernameValid = true;
+                    } else {
+                        usernameExistsError.style.display = 'block';
+                        usernameValid = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking username:', error);
+                    usernameValid = true; // Allow submission if validation fails
+                });
+            }
+        });
+    </script>
+</body>
+</html>

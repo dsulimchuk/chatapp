@@ -39,6 +39,16 @@ A simple real-time chat application built with Spring Boot and WebSockets.
 - Gradle
 - Docker and Docker Compose (for PostgreSQL database)
 
+### Environment Setup
+
+1. Copy the example environment file to create your own:
+
+```
+cp .env.example .env
+```
+
+2. Edit the `.env` file with your preferred database credentials.
+
 ### Database Setup
 
 Start the PostgreSQL database using Docker Compose:
@@ -55,6 +65,12 @@ docker-compose up -d
 ```
 
 The application will be available at http://localhost:8080
+
+### Default Credentials
+
+The application is initialized with a default administrator account:
+- Username: admin
+- Password: password (this should be changed in production)
 
 ## Testing
 
