@@ -4,6 +4,9 @@
     <title>Chat Rooms</title>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <!-- CSRF token for security -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <style>
         * {
             box-sizing: border-box;
@@ -240,6 +243,8 @@
                             <input type="text" id="name" name="name" th:field="*{name}" required minlength="3" maxlength="50"/>
                             <div id="nameError" class="error">Room name must be between 3 and 50 characters</div>
                             <div id="nameExistsError" class="error">This room name already exists</div>
+                            <!-- Server-side validation error message -->
+                            <div th:if="${roomNameError}" class="error" style="display: block;" th:text="${roomNameError}"></div>
                         </div>
                         
                         <div class="form-group">
@@ -287,22 +292,44 @@
             
             if (createRoomForm) {
                 createRoomForm.addEventListener('submit', function(e) {
+                    // Trim the name field value before submission
+                    if (nameInput) {
+                        nameInput.value = nameInput.value.trim();
+                    }
+
                     if (!nameValid) {
                         e.preventDefault();
+                        // Focus on the name input to draw user attention to the error
+                        nameInput.focus();
                     }
                 });
             }
             
             function validateRoomName(name) {
+                // Trim the name to handle whitespace issues
+                const trimmedName = name.trim();
+
+                // Add logging to help debug
+                console.log('Validating room name:', trimmedName);
+
                 fetch('/rooms/validate-name', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        // Add CSRF token if needed
+                        // Include the X-CSRF-TOKEN header
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.getAttribute('content') || ''
                     },
-                    body: JSON.stringify({ name: name })
+                    body: JSON.stringify({ name: trimmedName })
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok: ' + response.status);
+                    }
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('Room validation response:', data);
                     if (data.valid) {
                         nameExistsError.style.display = 'none';
                         nameValid = true;
@@ -313,7 +340,9 @@
                 })
                 .catch(error => {
                     console.error('Error checking room name:', error);
-                    nameValid = true; // Allow submission if validation fails
+                    // In case of error, we'll let the form submit and let server-side validation handle it
+                    nameExistsError.style.display = 'none';
+                    nameValid = true;
                 });
             }
             

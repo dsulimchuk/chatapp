@@ -55,8 +55,28 @@ public class RoomController {
     }
 
     @PostMapping
-    public String createRoom(@ModelAttribute Room room, Authentication authentication) {
+    public String createRoom(@ModelAttribute Room room, Authentication authentication, Model model) {
         User user = (User) authentication.getPrincipal();
+
+        // Trim room name and description
+        if (room.getName() != null) {
+            room.setName(room.getName().trim());
+        }
+
+        if (room.getDescription() != null) {
+            room.setDescription(room.getDescription().trim());
+        }
+
+        // Check if room already exists with this name
+        if (roomService.roomExistsByName(room.getName())) {
+            model.addAttribute("rooms", roomService.getAllRooms());
+            model.addAttribute("newRoom", room);
+            model.addAttribute("username", user.getUsername());
+            model.addAttribute("displayName", user.getDisplayName());
+            model.addAttribute("roomNameError", "This room name already exists. Please choose a different name.");
+            return "rooms";
+        }
+
         room.setCreatedBy(user.getDisplayName());
         Room savedRoom = roomService.createRoom(room);
         return "redirect:/rooms/" + savedRoom.getId();
@@ -66,7 +86,20 @@ public class RoomController {
     @ResponseBody
     public ResponseEntity<?> validateRoomName(@RequestBody Map<String, String> payload) {
         String name = payload.get("name");
+
+        // Add logging to debug
+        System.out.println("Validating room name: " + name);
+
+        if (name == null || name.trim().isEmpty()) {
+            return ResponseEntity.ok(Map.of("valid", false, "message", "Room name cannot be empty"));
+        }
+
+        // Trim the name to handle whitespace
+        name = name.trim();
+
         boolean exists = roomService.roomExistsByName(name);
-        return ResponseEntity.ok(Map.of("valid", !exists));
+        System.out.println("Room exists: " + exists);
+
+        return ResponseEntity.ok(Map.of("valid", !exists, "message", exists ? "Room name already exists" : "Room name is available"));
     }
 }

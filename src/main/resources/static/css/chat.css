@@ -100,6 +100,8 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
+    overflow: hidden; /* Prevent scrolling at container level */
+    position: relative; /* Create positioning context */
 }
 
 .messages-container {
@@ -107,6 +109,9 @@ body {
     overflow-y: auto;
     padding: 15px;
     max-height: calc(100% - 90px); /* Ensure messages don't overflow */
+    display: flex;
+    flex-direction: column;
+    scroll-behavior: smooth;
 }
 
 .message {
@@ -117,10 +122,25 @@ body {
     max-width: 80%;
 }
 
+/* Style system messages differently */
+.message.system-message {
+    background-color: #e8f0fe;
+    border-left: 3px solid #4285f4;
+    font-style: italic;
+    max-width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .message .username {
     font-weight: bold;
     color: #4285f4;
     margin-right: 5px;
+}
+
+/* System username style */
+.message.system-message .username {
+    color: #4285f4;
 }
 
 .message .timestamp {
@@ -133,6 +153,11 @@ body {
     word-wrap: break-word;
 }
 
+/* System message content */
+.message.system-message .content {
+    color: #555;
+}
+
 .message-form {
     display: flex;
     padding: 10px;
@@ -143,6 +168,9 @@ body {
     position: sticky;  /* Keep it at the bottom */
     bottom: 0;         /* Stick to bottom */
     z-index: 10;       /* Ensure it stays on top */
+    margin-top: auto;  /* Push it to the bottom of flex container */
+    width: 100%;       /* Full width */
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05); /* Add subtle shadow for separation */
 }
 
 .message-form textarea {
@@ -198,5 +226,37 @@ body {
 }
 
 .room-item.hidden {
+    display: none;
+}
+
+/* Scroll to bottom button */
+.scroll-bottom-btn {
+    position: absolute;
+    bottom: 90px; /* Just above the message form */
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 15;
+    transition: all 0.3s;
+    opacity: 0.7;
+}
+
+.scroll-bottom-btn:hover {
+    background-color: #3367d6;
+    opacity: 1;
+    transform: translateY(-2px);
+}
+
+.scroll-bottom-btn.hidden {
     display: none;
 }

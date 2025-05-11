@@ -23,12 +23,17 @@
 
         <div id="chat-box" class="chat-box">
             <div id="messages-container" class="messages-container">
-                <div th:each="message : ${messages}" class="message">
+                <div th:each="message : ${messages}"
+                     th:if="${message.content != null and !#strings.isEmpty(message.content)}"
+                     th:class="${message.username == 'System' ? 'message system-message' : 'message'}">
                     <span class="username" th:text="${message.username}">User</span>
                     <span class="timestamp" th:text="${#temporals.format(message.timestamp, 'HH:mm')}">12:00</span>
                     <p class="content" th:text="${message.content}">Message content</p>
                 </div>
             </div>
+
+            <!-- Scroll to bottom button -->
+            <button id="scroll-bottom-btn" class="scroll-bottom-btn" title="Scroll to bottom">↓</button>
 
             <div class="message-form">
                 <textarea id="message-input" placeholder="Type your message..." required></textarea>
@@ -60,8 +65,27 @@
             // Connect to WebSocket
             connect();
 
-            // Scroll to bottom of messages container
+            // Scroll to bottom of messages container on page load
             scrollToBottom();
+
+            // Also scroll to bottom after a short delay to ensure all content is rendered
+            setTimeout(scrollToBottom, 300);
+
+            // Make sure we scroll to the bottom when window is resized
+            window.addEventListener('resize', scrollToBottom);
+
+            // Handle scroll to bottom button
+            const scrollBtn = document.getElementById('scroll-bottom-btn');
+            scrollBtn.addEventListener('click', scrollToBottom);
+
+            // Show scroll button when not at bottom
+            messagesContainer.addEventListener('scroll', function() {
+                const isAtBottom = messagesContainer.scrollHeight - messagesContainer.clientHeight <= messagesContainer.scrollTop + 100;
+                scrollBtn.classList.toggle('hidden', isAtBottom);
+            });
+
+            // Hide button initially (we're at the bottom on page load)
+            scrollBtn.classList.add('hidden');
 
             sendBtn.addEventListener('click', sendMessage);
 
@@ -76,20 +100,51 @@
                 const socket = new SockJS('/chat-websocket');
                 stompClient = Stomp.over(socket);
 
+                // Disable debug logging from STOMP
+                stompClient.debug = null;
+
                 stompClient.connect({}, function(frame) {
                     console.log('Connected: ' + frame);
 
                     stompClient.subscribe(`/topic/chat/${roomId}`, function(message) {
                         const messageData = JSON.parse(message.body);
+                        // Keep track of last join message to prevent duplicates
+                        if (messageData.username === 'System' &&
+                            messageData.content && messageData.content.endsWith('joined the chat')) {
+                            // Check if it's a duplicate join message within 5 seconds
+                            const lastJoinTime = sessionStorage.getItem('lastJoinTime');
+                            const lastJoinUser = sessionStorage.getItem('lastJoinUser');
+                            const currentTime = new Date().getTime();
+
+                            if (lastJoinTime && lastJoinUser === messageData.content &&
+                                currentTime - parseInt(lastJoinTime) < 5000) {
+                                console.log('Suppressing duplicate join message');
+                                return; // Skip displaying duplicate join
+                            }
+
+                            // Store this join message info
+                            sessionStorage.setItem('lastJoinTime', currentTime.toString());
+                            sessionStorage.setItem('lastJoinUser', messageData.content);
+                        }
+
                         displayMessage(messageData);
                     });
 
-                    // Send a system message that user joined
-                    sendSystemMessage(([[${displayName}]] || username) + ' joined the chat');
+                    // Send a system message that user joined with a small delay
+                    // This helps ensure all subscription is complete before sending
+                    setTimeout(() => {
+                        sendSystemMessage(([[${displayName}]] || username) + ' joined the chat');
+                    }, 500);
                 });
             }
 
             function sendSystemMessage(content) {
+                // Don't send empty system messages
+                if (!content || content.trim() === '') {
+                    console.log("Attempted to send empty system message");
+                    return;
+                }
+
                 const message = {
                     username: 'System',
                     content: content,
@@ -97,27 +152,54 @@
                     roomId: roomId
                 };
 
-                stompClient.send(`/app/chat/${roomId}`, {}, JSON.stringify(message));
+                stompClient.send(`/app/chat/${roomId}`, {
+                    'username': 'System',
+                    'displayName': 'System'
+                }, JSON.stringify(message));
             }
 
             function sendMessage() {
                 const content = messageInput.value.trim();
-                if (content && stompClient) {
+                // Improved empty message checking
+                if (!content || content === '') {
+                    console.log("Preventing empty message from being sent");
+                    return;
+                }
+
+                if (stompClient) {
                     const message = {
                         username: displayName || username, // Use display name when available
                         content: content,
                         timestamp: new Date(),
-                        roomId: roomId
+                        roomId: roomId,
+                        // We don't need to set userId as the server will handle authentication
                     };
 
-                    stompClient.send(`/app/chat/${roomId}`, {}, JSON.stringify(message));
+                    stompClient.send(`/app/chat/${roomId}`, {
+                        // Add username to header for authentication fallback
+                        'username': username,
+                        'displayName': displayName || username
+                    }, JSON.stringify(message));
                     messageInput.value = '';
+                } else {
+                    console.error("STOMP client not connected!");
                 }
             }
 
             function displayMessage(message) {
+                // Skip empty messages
+                if (!message.content || message.content.trim() === '') {
+                    console.log("Skipping empty message:", message);
+                    return;
+                }
+
                 const messageElement = document.createElement('div');
                 messageElement.className = 'message';
+
+                // Special styling for system messages
+                if (message.username === 'System') {
+                    messageElement.classList.add('system-message');
+                }
 
                 const usernameElement = document.createElement('span');
                 usernameElement.className = 'username';
@@ -144,7 +226,17 @@
 
             function scrollToBottom() {
                 if (messagesContainer) {
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    // Force layout calculation before scrolling
+                    setTimeout(() => {
+                        // Two approaches to ensure scrolling works
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+                        // Alternative approach using scrollIntoView
+                        const lastMessage = messagesContainer.lastElementChild;
+                        if (lastMessage) {
+                            lastMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                        }
+                    }, 50);
                 }
             }
         });

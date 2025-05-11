@@ -35,7 +35,16 @@ public class ChatController {
 
     @MessageMapping("/chat/{roomId}")
     @SendTo("/topic/chat/{roomId}")
-    public Message sendMessage(@DestinationVariable Long roomId, Message message) {
+    public Message sendMessage(@DestinationVariable Long roomId, Message message,
+                               @org.springframework.messaging.handler.annotation.Header(value = "username", required = false) String headerUsername,
+                               @org.springframework.messaging.handler.annotation.Header(value = "displayName", required = false) String headerDisplayName) {
+
+        // If the message doesn't have a username but headers do, use the header
+        if ((message.getUsername() == null || message.getUsername().isEmpty()) && headerUsername != null) {
+            message.setUsername(headerDisplayName != null ? headerDisplayName : headerUsername);
+        }
+
+        // The chatService now handles cases where authentication is not available
         return chatService.addMessage(message, roomId);
     }
 }

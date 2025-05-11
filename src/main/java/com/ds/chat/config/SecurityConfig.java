@@ -18,6 +18,7 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/register", "/css/**", "/js/**", "/webjars/**").permitAll()
+                .requestMatchers("/chat-websocket/**").permitAll() // Allow WebSocket connections without authentication
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -30,10 +31,10 @@ public class SecurityConfig {
                 .logoutSuccessUrl("/login?logout")
                 .permitAll()
             );
-            
+
         // Allow websocket connections
         http.csrf(csrf -> csrf.ignoringRequestMatchers("/chat-websocket/**"));
-            
+
         return http.build();
     }
     

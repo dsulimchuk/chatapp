@@ -17,4 +17,13 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     // Use Room object instead of roomId since roomId is a transient property
     @Query("SELECT m FROM Message m WHERE m.room.id = :roomId ORDER BY m.timestamp ASC")
     List<Message> findByRoomIdOrderByTimestampAsc(@Param("roomId") Long roomId);
+
+    // Find recent system messages to detect duplicates
+    @Query("SELECT m FROM Message m WHERE m.room.id = :roomId AND m.username = :username " +
+           "AND m.content = :content AND m.timestamp > :timestamp")
+    List<Message> findByRoomIdAndUsernameAndContentAndTimestampAfter(
+            @Param("roomId") Long roomId,
+            @Param("username") String username,
+            @Param("content") String content,
+            @Param("timestamp") java.time.LocalDateTime timestamp);
 }
