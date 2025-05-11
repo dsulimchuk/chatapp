@@ -35,11 +35,12 @@ A simple real-time chat application built with Spring Boot and WebSockets.
 
 ### Prerequisites
 
-- Java 21 or later
-- Gradle
-- Docker and Docker Compose (for PostgreSQL database)
+- Java 21 or later and Gradle (for local development)
+- Docker and Docker Compose (for containerized deployment)
 
-### Environment Setup
+### Option 1: Running Locally
+
+#### Environment Setup
 
 1. Copy the example environment file to create your own:
 
@@ -49,20 +50,48 @@ cp .env.example .env
 
 2. Edit the `.env` file with your preferred database credentials.
 
-### Database Setup
+#### Database Setup
 
 Start the PostgreSQL database using Docker Compose:
 
 ```
-docker-compose up -d
+docker-compose up -d postgres
 ```
 
-### Build and Run
+#### Build and Run
 
 ```
 ./gradlew build
 ./gradlew bootRun
 ```
+
+### Option 2: Running with Docker
+
+The easiest way to run the entire application stack is using Docker Compose:
+
+```
+docker-compose up -d
+```
+
+This will:
+1. Build the application from source
+2. Start PostgreSQL database
+3. Connect the application to the database
+4. Make the application available on port 8080
+
+To rebuild the application after making changes:
+
+```
+docker-compose up -d --build
+```
+
+To view logs:
+
+```
+docker-compose logs -f app
+```
+
+### Accessing the Application
 
 The application will be available at http://localhost:8080
 
